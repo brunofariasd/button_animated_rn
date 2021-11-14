@@ -1,5 +1,7 @@
-import React, {useState} from 'react';
-import {Animated, StyleSheet, TouchableWithoutFeedback} from 'react-native';
+import React, {useRef, useState} from 'react';
+import {Animated, StyleSheet} from 'react-native';
+import {useAppDispatch, useAppSelector} from './store';
+import {updateText} from './store/textAnimationStore.store';
 
 import {
   Container,
@@ -15,15 +17,20 @@ interface AnimationObject {
   opacity: Animated.Value;
 }
 
-const App: React.FC = () => {
+const Main: React.FC = () => {
   const stateAnimation: AnimationObject = {
-    animation: new Animated.Value(0),
-    opacity: new Animated.Value(1),
+    animation: useRef(new Animated.Value(0)).current,
+    opacity: useRef(new Animated.Value(1)).current,
   };
+  const dispatch = useAppDispatch();
+  const textAnimationReducer = useAppSelector(
+    state => state.textAnimationStore,
+  );
 
   const handlePressButtonAnimation = () => {
     stateAnimation.animation.setValue(0);
     stateAnimation.opacity.setValue(1);
+    dispatch(updateText('LOADING'));
 
     Animated.timing(stateAnimation.animation, {
       toValue: 1,
@@ -35,7 +42,14 @@ const App: React.FC = () => {
           toValue: 0,
           duration: 1000,
           useNativeDriver: false,
-        }).start();
+        }).start(({finished}) => {
+          if (finished) {
+            dispatch(updateText('DONE'));
+            setTimeout(() => {
+              dispatch(updateText('APERTE'));
+            }, 1000);
+          }
+        });
       }
     });
   };
@@ -78,11 +92,11 @@ const App: React.FC = () => {
               style={[styles.progress, styles.opacityBackground, progressStyle]}
             />
           </ContainerAnimation>
-          <ButtonText>APERTE</ButtonText>
+          <ButtonText>{textAnimationReducer.textAnimation}</ButtonText>
         </ButtonContainer>
       </ContentButton>
     </Container>
   );
 };
 
-export default App;
+export default Main;
